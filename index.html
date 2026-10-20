@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MATH QUEST: El Desafío Matemático</title>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+:root{--r:#e21b3c;--b:#1368ce;--y:#d89e00;--g:#26890c;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%}
+body{font:900 16px Nunito,system-ui,sans-serif;color:#fff;background:#2d0d63;overflow-x:hidden}
+#bg{position:fixed;inset:0;z-index:-2;background:linear-gradient(160deg,var(--c1,#46178f),var(--c2,#1368ce));transition:background 1s}
+#bg i{position:absolute;top:0;font-style:normal;font-size:46px;opacity:.16;animation:fl 16s linear infinite}
+@keyframes fl{from{transform:translateY(105vh) rotate(0)}to{transform:translateY(-15vh) rotate(360deg)}}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);background:#fff;color:#1d1135;padding:10px 18px;border-radius:99px;z-index:60;opacity:0;transition:opacity .3s;pointer-events:none}
+#v{max-width:860px;margin:auto;padding:14px;min-height:100%;display:flex;flex-direction:column;gap:12px}
+h1,h2,.t{font-family:'Lilita One',Impact,sans-serif;font-weight:400}
+h1{font-size:clamp(52px,15vw,110px);line-height:.92;text-align:center;text-shadow:0 5px 0 var(--r),0 10px 0 rgba(0,0,0,.35)}
+.btn{border:0;border-radius:10px;padding:16px 20px;color:#fff;font:inherit;font-size:20px;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.35);transition:transform .08s;text-align:center}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.btn:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.btn:disabled{cursor:not-allowed}
+.r{background:var(--r)}.b{background:var(--b)}.y{background:var(--y)}.g{background:var(--g)}.w{background:#fff;color:#1d1135}
+.ans{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1}
+.ans .btn{min-height:96px;font-size:clamp(18px,4.6vw,30px);display:flex;align-items:center;gap:10px;text-align:left;box-shadow:0 6px 0 rgba(0,0,0,.35)}
+.ans .btn span{font-size:30px}
+.dim{opacity:.3}.ok{outline:5px solid #fff;transform:scale(1.02)}
+.card{background:#fff;color:#1d1135;border-radius:12px;padding:16px;text-align:center}
+.q{font-size:clamp(20px,5vw,34px);margin-top:4px;line-height:1.2}
+.hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+.chip{background:rgba(0,0,0,.38);border-radius:99px;padding:6px 12px}
+.bar{height:14px;background:rgba(0,0,0,.38);border-radius:9px;overflow:hidden}
+.bar>b{display:block;height:100%;background:#fff;border-radius:9px;transition:width .15s linear}
+.sheet{position:sticky;bottom:0;border-radius:14px 14px 0 0;padding:16px;animation:up .25s}
+@keyframes up{from{transform:translateY(100%)}}
+.boss{text-align:center;font-size:64px;line-height:1.1}
+.shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-14px)}75%{transform:translateX(14px)}}
+.gw{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.list{display:grid;gap:8px}
+.row{display:flex;gap:12px;align-items:center;background:rgba(0,0,0,.35);border-radius:10px;padding:12px}
+.pod{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin:10px 0}
+.pod div{width:30%;max-width:160px;text-align:center;border-radius:10px 10px 0 0;padding:8px 4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<div id="bg"></div><canvas id="fx"></canvas><div id="toast"></div><main id="v"></main>
+<script>
+const $=s=>document.querySelector(s),R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,P=a=>a[R(0,a.length-1)],S=a=>a.map(x=>[Math.random(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
+const fmt=n=>String(n).replace('-','−'),gcd=(a,b)=>b?gcd(b,a%b):a,fr=(n,d)=>{const g=gcd(n,d);return n==0?'0':d/g==1?String(n/g):`${n/g}/${d/g}`};
+/* ---------- Guardado ---------- */
+const K='mathquest.v1';
+const fresh=()=>({done:[0,0,0,0,0,0,0],medal:[0,0,0,0,0,0,0],score:0,coins:0,xp:0,solved:0,ok:0,time:0,best:0,smax:0,ach:{},fl:{},rec:[],sfx:1,mus:1});
+let D=(()=>{try{const s=JSON.parse(localStorage.getItem(K));if(s&&s.done)return Object.assign(fresh(),s)}catch(e){}return fresh()})();
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}};
+let G=null,rs=0;
+const lv=()=>Math.floor(D.xp/120)+1,av=()=>['🙂','🤓','😎','🧠','🦸','👑'][Math.min(5,Math.floor((lv()-1)/2))];
+const mu=()=>G?Math.min(4,1+Math.floor(G.st/3)):1;
+/* ---------- Mundos ---------- */
+const W=[
+{n:'Ciudad de los Números',i:'🏙️',c:['#46178f','#1368ce'],b:['Robot Calculador','🤖'],ic:['➕','➖','✖️','🔢']},
+{n:'Valle de los Acertijos',i:'🧩',c:['#0b6b4f','#1b2a8a'],b:['Maestro de los Acertijos','🧙'],ic:['🧩','❓','🔮','🌀']},
+{n:'Templo de la Geometría',i:'📐',c:['#8a4b08','#6a1b9a'],b:['Guardián Geométrico','📐'],ic:['△','◯','□','📏']},
+{n:'Estación Álgebra',i:'🚀',c:['#0d1b6e','#00838f'],b:['Señor del Álgebra','👽'],ic:['x','y','=','🚀']},
+{n:'Ciudad Financiera',i:'💰',c:['#1b5e20','#9a6b00'],b:['Rey de los Porcentajes','💰'],ic:['%','💵','📈','🪙']},
+{n:'Zona de Probabilidad',i:'⚡',c:['#4a148c','#c2185b'],b:['Maestro de la Probabilidad','⚡'],ic:['🎲','🪙','🎰','⚡']},
+{n:'Dimensión Matemática',i:'🌌',c:['#0a0a2e','#7b1fa2'],b:['El Gran Matemático','👑'],ic:['∑','π','∞','🌌']}];
+/* ---------- Generadores de acertijos ---------- */
+function mc(q,a,e,ds){const s=[a];ds.forEach(d=>{if(!s.includes(d)&&s.length<4)s.push(d)});let k=1;while(s.length<4){[a+k,a-k].forEach(c=>{if(s.length<4&&!s.includes(c)&&(c>0||a<=0))s.push(c)});k++}return{t:'mc',q,a:fmt(a),o:S(s).map(fmt),e}}
+const mcT=(q,a,w,e)=>({t:'mc',q,a,o:S([a,...w]),e});
+const tf=(q,v,e)=>({t:'tf',q,a:v?'Verdadero':'Falso',o:['Verdadero','Falso'],e});
+const num=(q,a,e)=>({t:'num',q,a:String(a),e});
+const tfl=L=>()=>{const f=P(L);return tf(f[0],f[1],f[2])};
+function fq(q,n,d,e){const a=fr(n,d),w=[];S([n+1,n-1,n+2,n-2,d-n,n*2,Math.max(1,n-3)]).forEach(m=>{const s=fr(m,d);if(m>=0&&m<=d&&s!=a&&!w.includes(s))w.push(s)});let k=1;while(w.length<3){const s=fr(R(1,d),d+k++);if(s!=a&&!w.includes(s))w.push(s)}return mcT(q,a,w.slice(0,3),e)}
+function path(){const ex=()=>{const a=R(3,15),b=R(2,12),k=R(0,2);return k==0?[`${a} + ${b}`,a+b]:k==1?[`${a} − ${b}`,a-b]:[`${a} × ${b}`,a*b]};
+let L=[];while(L.length<4){const x=ex();if(!L.some(y=>y[1]==x[1]))L.push(x)}const c=L[0];
+return{t:'mc',q:`Elige el camino correcto: la puerta cuyo resultado sea ${c[1]}`,a:c[0],o:S(L.map(x=>x[0])),door:1,e:`${c[0]} = ${c[1]}. Las otras puertas dan ${L.slice(1).map(x=>x[1]).join(', ')}.`}}
+const geoTF=[['Un triángulo puede tener dos ángulos rectos',0,'Los tres ángulos suman 180° y dos rectos ya suman 180°.'],['Un hexágono tiene 6 lados',1,'Hexa significa seis.'],['Un cuadrado tiene sus 4 lados iguales',1,'Además tiene 4 ángulos rectos.'],['El perímetro se mide en cm²',0,'El perímetro es una longitud (cm); el área se mide en cm².'],['Un ángulo de 90° es recto',1,'Forma una esquina como la de una hoja.']];
+const prTF=[['Una probabilidad puede valer 1,5',0,'Toda probabilidad está entre 0 y 1.'],['Si una moneda salió cara 5 veces, la próxima tiene más opciones de cruz',0,'Cada lanzamiento es independiente: siempre 1/2.'],['Un suceso imposible tiene probabilidad 0',1,'Nunca puede ocurrir.'],['Al lanzar un dado, sacar 7 es posible',0,'El dado solo tiene caras del 1 al 6.']];
+const GN=[
+[k=>{const a=R(12,60+k*12),b=R(11,50+k*10);return mc(`${a} + ${b} = ?`,a+b,`${a} + ${b} = ${a+b}.`,[a+b+10,a+b-10,a+b+1,a+b-1])},
+k=>{const a=R(3,9+(k>>1)),b=R(4,12);return mc(`${a} × ${b} = ?`,a*b,`${a} × ${b} = ${a*b}.`,[a*b+a,a*b-b,a*b+1,a*b-a])},
+k=>{const a=R(-15-k,15+k),b=R(-15-k,15+k);return mc(`(${fmt(a)}) + (${fmt(b)}) = ?`,a+b,`Suma con signos: ${fmt(a)} + (${fmt(b)}) = ${fmt(a+b)}.`,[a-b,-(a+b),a+b+2,b-a])},
+k=>{const a=R(10,60),b=R(10,60);return num(`${a} + ? = ${a+b}`,b,`${a+b} − ${a} = ${b}.`)},
+k=>{const a=R(20,90),b=R(a+1,a+60);return mc(`${a} − ${b} = ?`,a-b,`Como ${b} es mayor que ${a}, el resultado es negativo: ${fmt(a-b)}.`,[b-a,a+b,a-b+10,a-b-10])},
+path,
+k=>{const a=R(3,9),b=R(3,9),f=P([0,1,10,-1]);return tf(`${a} × ${b} = ${a*b+f}`,!f,`${a} × ${b} = ${a*b}.`)}],
+[k=>{const s=R(1,20),d=R(2,9+k),L=[0,1,2,3].map(i=>s+d*i),a=s+d*4;return mc(`¿Qué número sigue? ${L.join(', ')}, ?`,a,`Se suma ${d} cada vez.`,[a+d,a-1,a+1,L[3]+1])},
+k=>{const s=R(1,4),r=R(2,3),L=[0,1,2,3].map(i=>s*r**i),a=s*r**4;return mc(`Completa la secuencia: ${L.join(', ')}, ?`,a,`Se multiplica por ${r} cada vez.`,[a+s,a-r,L[3]+r,a*r])},
+k=>{const n=R(2,8+k),a=(n+3)**2;return mc(`Patrón: ${n*n}, ${(n+1)**2}, ${(n+2)**2}, ?`,a,`Son cuadrados perfectos consecutivos: ${n+3}² = ${a}.`,[a+1,a-n,(n+2)**2+n+2,a+2*n])},
+k=>{const a=R(1,5),b=R(1,6),t=[a,b,a+b,a+2*b,2*a+3*b];return num(`Cada número es la suma de los dos anteriores: ${t.join(', ')}, ?`,3*a+5*b,`${t[3]} + ${t[4]} = ${3*a+5*b}.`)},
+k=>{const s=R(2,20),d=R(2,9+k);return num(`Número que falta: ${s}, ${s+d}, ?, ${s+3*d}, ${s+4*d}`,s+2*d,`Se suma ${d} cada vez: ${s+d} + ${d} = ${s+2*d}.`)},
+k=>{const x=R(4,15);return num(`Ana tiene el doble de años que Luis y juntos suman ${3*x}. ¿Cuántos años tiene Ana?`,2*x,`Luis tiene ${x}, Ana el doble: ${2*x}. Juntos ${3*x}.`)},
+k=>{const n=S(['Ana','Beto','Caro','Dani','Eli']).slice(0,3);return mcT(`Si ${n[0]} es más alta que ${n[1]} y ${n[1]} es más alta que ${n[2]}, ¿quién es la más baja?`,n[2],[n[0],n[1],'No se puede saber'],`${n[0]} > ${n[1]} > ${n[2]}, así que ${n[2]} es la más baja.`)},
+k=>{const s=R(1,9),d=R(2,6),f=P([0,0,1]);return tf(`En ${s}, ${s+d}, ${s+2*d}, ${s+3*d} el siguiente número es ${s+4*d+(f?d:0)}`,!f,`Se suma ${d}: el siguiente es ${s+4*d}.`)}],
+[k=>{const a=R(3,12+k),b=R(2,10+k);return mc(`Un rectángulo mide ${a} cm de largo y ${b} cm de ancho. ¿Cuál es su área en cm²?`,a*b,`Área = largo × ancho = ${a} × ${b} = ${a*b}.`,[2*(a+b),a+b,a*b+a,a*b-b])},
+k=>{const a=R(3,12+k),b=R(2,10+k);return mc(`Un rectángulo mide ${a} cm de largo y ${b} cm de ancho. ¿Cuál es su perímetro en cm?`,2*(a+b),`Perímetro = 2 × (${a} + ${b}) = ${2*(a+b)}.`,[a*b,a+b,2*a+b,a+2*b])},
+k=>{const b=R(2,10+k)*2,h=R(3,12);return mc(`Un triángulo tiene base ${b} cm y altura ${h} cm. ¿Cuál es su área en cm²?`,b*h/2,`Área = base × altura ÷ 2 = ${b*h/2}.`,[b*h,b+h,b*h/2+h,b*h/4])},
+k=>{const a=R(30,90),b=R(30,80);return num(`Dos ángulos de un triángulo miden ${a}° y ${b}°. ¿Cuánto mide el tercero (en grados)?`,180-a-b,`Los ángulos suman 180°: 180 − ${a} − ${b} = ${180-a-b}.`)},
+k=>{const r=R(2,9+k),v=(3.14*r*r).toFixed(2);return num(`Área de un círculo de radio ${r} cm (usa π = 3.14)`,+v,`Área = π × r² = 3.14 × ${r}² = ${+v}.`)},
+k=>{const s=R(3,12);return num(`Un cuadrado tiene área ${s*s} cm². ¿Cuánto mide su lado?`,s,`Lado = √${s*s} = ${s}.`)},
+k=>{const n=R(5,10);return mc(`¿Cuánto suman los ángulos interiores de un polígono de ${n} lados?`,(n-2)*180,`Suma = (n − 2) × 180° = ${(n-2)*180}°.`,[n*180,(n-1)*180,(n-3)*180,360])},
+tfl(geoTF)],
+[k=>{const x=R(2,12),a=R(2,9),b=R(1,20);return num(`Resuelve: ${a}x + ${b} = ${a*x+b}. ¿x = ?`,x,`${a}x = ${a*x+b} − ${b} = ${a*x}, entonces x = ${x}.`)},
+k=>{const x=R(2,12),a=R(2,9),b=R(1,20);return num(`Resuelve: ${a}x − ${b} = ${a*x-b}. ¿x = ?`,x,`${a}x = ${a*x-b} + ${b} = ${a*x}, entonces x = ${x}.`)},
+k=>{const x=R(2,9),a=R(2,9),b=R(1,15);return mc(`Si x = ${x}, ¿cuánto vale ${a}x + ${b}?`,a*x+b,`${a} × ${x} + ${b} = ${a*x+b}.`,[a*x-b,a+x+b,a*(x+b),a*x+b+a])},
+k=>{const a=R(2,9),b=R(2,9),c=a+b;return mcT(`Simplifica: ${a}x + ${b}x`,`${c}x`,[`${a*b}x`,`${c}x²`,`${c}`],`Suma los coeficientes: ${a} + ${b} = ${c}, así que ${c}x.`)},
+k=>{const a=R(2,6),b=R(1,9),x=R(2,8);return mc(`Si f(x) = ${a}x + ${b}, ¿cuánto vale f(${x})?`,a*x+b,`f(${x}) = ${a} × ${x} + ${b} = ${a*x+b}.`,[a*x-b,a*(x+b),a+x+b,a*x+b+a])},
+k=>{const x=R(2,9),a=R(4,9),c=R(1,a-2),b=R(1,20),d=b+(a-c)*x;return num(`Resuelve: ${a}x + ${b} = ${c}x + ${d}. ¿x = ?`,x,`${a-c}x = ${d} − ${b} = ${d-b}, entonces x = ${x}.`)},
+k=>{const x=R(2,9),a=R(2,9),b=R(1,12),f=P([0,1,2]);return tf(`Si ${a}x + ${b} = ${a*x+b}, entonces x = ${x+f}`,!f,`Al despejar: x = ${x}.`)}],
+[k=>{const p=P([10,20,25,50,75]),n=R(2,20)*20,a=n*p/100;return mc(`¿Cuánto es el ${p}% de ${n}?`,a,`${n} × ${p}/100 = ${a}.`,[n*p/10,a+5,n-a,a*2])},
+k=>{const p=P([10,20,25,30,40,50]),n=R(2,25)*20,a=n*p/100;return mc(`Una camiseta de $${n} tiene ${p}% de descuento. ¿Cuánto pagas ($)?`,n-a,`Descuento: ${a}. Pagas ${n} − ${a} = ${n-a}.`,[a,n+a,n-a+10,n-p])},
+k=>{const a=R(2,6),b=R(7,15),u=R(2,9)*5;return num(`Si ${a} cuadernos cuestan $${a*u}, ¿cuánto cuestan ${b} cuadernos ($)?`,b*u,`Cada cuaderno cuesta ${u}: ${b} × ${u} = ${b*u}.`)},
+k=>{const A=R(2,10)*20,p=P([10,20,25,50]),B=A+A*p/100;return mc(`Un precio sube de $${A} a $${B}. ¿Qué porcentaje aumentó?`,p,`Aumento ${B-A} sobre ${A}: ${B-A}/${A} = ${p}%.`,[p+10,p+5,p*2,Math.max(5,p-5)])},
+k=>{const p1=P([10,20,30,50]),p2=P([10,20,30,50]),q=(100-p1)*(100-p2)/100,t=100-q;return mc(`Un artículo tiene ${p1}% de descuento y luego otro ${p2}% sobre el nuevo precio. ¿Descuento total (%)?`,t,`Quedan ${100-p1}% × ${100-p2}% = ${q}% del precio, así que el descuento total es ${t}%.`,[p1+p2,(p1+p2)/2,p1+p2-10,p1+p2+5])},
+k=>{const n=R(2,15)*20,a=n*15/100;return mc(`Una cuenta es de $${n} y dejas 15% de propina. ¿Cuánto pagas en total ($)?`,n+a,`Propina: ${a}. Total: ${n} + ${a} = ${n+a}.`,[a,n+a/2,n+a+10,n-a])},
+tfl([['Un descuento de 50% seguido de otro de 50% regala el producto',0,'Queda 50% × 50% = 25% del precio: el descuento total es 75%.'],['El 10% de 200 es 20',1,'200 ÷ 10 = 20.'],['Si algo sube 100%, su precio se duplica',1,'100% de aumento = el precio original más otro igual.']])],
+[k=>{const m=P([2,3]);return fq(`Lanzas un dado de 6 caras. ¿Probabilidad de sacar un múltiplo de ${m}?`,6/m,6,`Casos favorables: ${6/m} de 6 posibles = ${fr(6/m,6)}.`)},
+k=>{const m=R(1,4);return fq(`Lanzas un dado. ¿Probabilidad de sacar un número mayor que ${m}?`,6-m,6,`Hay ${6-m} números mayores que ${m} entre 6: ${fr(6-m,6)}.`)},
+k=>{const r=R(2,8),b=R(2,8);return fq(`En una bolsa hay ${r} bolas rojas y ${b} azules. ¿Probabilidad de sacar una roja?`,r,r+b,`${r} favorables entre ${r+b} posibles = ${fr(r,r+b)}.`)},
+k=>{const n=R(4,9),a=n*(n-1)/2;return mc(`${n} amigos se saludan con un apretón de manos, cada pareja una vez. ¿Cuántos apretones hay?`,a,`Combinaciones: ${n} × ${n-1} ÷ 2 = ${a}.`,[n*n,n*(n-1),2*n,a+n])},
+k=>{const n=R(3,6);let f=1;for(let i=2;i<=n;i++)f*=i;return mc(`¿De cuántas formas distintas puedes ordenar ${n} libros en un estante?`,f,`${n}! = ${f}.`,[n*n,n*2,f+n,f-n])},
+k=>{const n=R(2,4);return fq(`Lanzas una moneda ${n} veces. ¿Probabilidad de que todas sean cara?`,1,2**n,`(1/2)^${n} = 1/${2**n}.`)},
+k=>{const a=R(2,5),b=R(2,6);return mc(`Tienes ${a} camisetas y ${b} pantalones. ¿Cuántos conjuntos distintos puedes armar?`,a*b,`${a} × ${b} = ${a*b} combinaciones.`,[a+b,a*b+a,a*b-b,2*(a+b)])},
+tfl(prTF)]];
+GN.push(GN.flat().concat([path]));
+/* ---------- Audio ---------- */
+let AC;const ac=()=>{if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}return AC};
+function tone(f,t,d,ty='sine',v=.15){const c=ac();if(!c||c.state!='running')return;const o=c.createOscillator(),g=c.createGain(),n=c.currentTime+t;o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);o.connect(g);g.connect(c.destination);o.start(n);o.stop(n+d)}
+const sfx=k=>{if(D.sfx)k?[523,659,784,1047].forEach((f,i)=>tone(f,i*.07,.2,'triangle')):[196,147].forEach((f,i)=>tone(f,i*.16,.3,'sawtooth',.1))};
+let MI;function music(i){clearInterval(MI);if(!D.mus)return;const ms=[[0,2,4,7,9],[0,3,5,7,10],[0,2,3,7,8],[0,4,5,7,11],[0,2,5,7,9],[0,3,4,7,10],[0,1,5,7,8]],r=[262,196,220,247,233,208,185],t=[260,300,240,280,220,250,200],k=Math.max(i,0),s=ms[k];let n=0;
+MI=setInterval(()=>{n++;if(n%2==0)tone(r[k]/2*2**(s[(n>>1)%5]/12),0,.3,'triangle',.05);if(Math.random()<.7)tone(r[k]*2*2**(P(s)/12),0,.2,'square',.02)},t[k])}
+addEventListener('pointerdown',()=>{const c=ac();if(c&&c.state=='suspended')c.resume()});
+/* ---------- Partículas ---------- */
+const cv=$('#fx'),cx=cv.getContext('2d');let ps=[];
+const rz=()=>{cv.width=innerWidth;cv.height=innerHeight};rz();addEventListener('resize',rz);
+function burst(n=50){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;for(let i=0;i<n;i++)ps.push({x:innerWidth/2,y:innerHeight*.55,vx:(Math.random()-.5)*14,vy:-Math.random()*12-2,l:60,c:P(['#e21b3c','#1368ce','#d89e00','#26890c','#fff'])})}
+(function lp(){cx.clearRect(0,0,cv.width,cv.height);ps=ps.filter(p=>p.l>0);ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.4;p.l--;cx.fillStyle=p.c;cx.fillRect(p.x,p.y,8,8)});requestAnimationFrame(lp)})();
+/* ---------- Utilidades UI ---------- */
+const V=h=>{$('#v').innerHTML=h;scrollTo(0,0)};
+function theme(i){const c=i<0?['#46178f','#1368ce']:W[i].c,s=$('#bg').style;s.setProperty('--c1',c[0]);s.setProperty('--c2',c[1]);const a=i<0?['➕','➖','✖️','➗','π','√','%','∑']:W[i].ic;$('#bg').innerHTML=Array.from({length:10},(_,j)=>`<i style="left:${j*10}%;animation-delay:-${j*1.6}s;animation-duration:${13+j%4*4}s">${a[j%a.length]}</i>`).join('')}
+function toast(t){const e=$('#toast');e.textContent=t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=0,2400)}
+const hdr=t=>`<div class=hud><button class="btn w" style="padding:8px 14px" onclick="menu()">◀ Menú</button><h2 style="font-size:30px">${t}</h2></div>`;
+const AL=[['p1','🎯','Primer paso','Acierta tu primer acertijo',()=>D.ok>=1],['r5','🔥','En llamas','Racha de 5 aciertos',()=>D.smax>=5],['r10','🌋','Imparable','Racha de 10 aciertos',()=>D.smax>=10],['rayo','⚡','Rayo','Acierta en menos de 3 segundos',()=>D.fl.rayo],['jefe','👹','Cazajefes','Derrota a un jefe',()=>D.done.some(x=>x)],['imp','💎','Impecable','Gana un mundo sin perder vidas',()=>D.fl.imp],['coin','🪙','Millonario','Reúne 500 monedas',()=>D.coins>=500],['n5','🎖️','Nivel 5','Llega al nivel 5',()=>lv()>=5],['all','👑','Leyenda','Completa los 7 mundos',()=>D.done.every(x=>x)]];
+const chk=()=>AL.forEach(a=>{if(!D.ach[a[0]]&&a[4]()){D.ach[a[0]]=1;toast(`🏆 Logro: ${a[2]}`)}});
+function addxp(n){const a=lv();D.xp+=n;if(lv()>a)toast(`¡Nivel ${lv()}! ${av()}`)}
+const stopT=()=>{if(G)clearInterval(G.iv)};
+/* ---------- Pantallas ---------- */
+function menu(){stopT();G=null;theme(-1);music(-1);
+V(`<div style="margin-top:3vh"><h1>MATH<br>QUEST</h1><p class=t style="text-align:center;font-size:clamp(20px,5vw,30px);margin-top:12px">El Desafío Matemático</p></div>
+<p style="text-align:center;max-width:520px;margin:0 auto">“Bienvenido a MATH QUEST. Solo los jugadores que dominen las matemáticas podrán llegar al desafío final.”</p>
+<div class=hud style="justify-content:center"><span class=chip>${av()} Nivel ${lv()}</span><span class=chip>⭐ Récord ${D.best}</span><span class=chip>🪙 ${D.coins}</span></div>
+<div style="display:grid;gap:12px;max-width:420px;width:100%;margin:6px auto">
+<button class="btn r" onclick="play()">▶ JUGAR</button><button class="btn b" onclick="worlds()">🌎 MUNDOS</button><button class="btn y" onclick="achs()">🏆 LOGROS</button><button class="btn g" onclick="recs()">📊 RÉCORDS</button><button class="btn w" onclick="cfg()">⚙️ CONFIGURACIÓN</button></div>`)}
+function play(){const n=D.done.indexOf(0);n<0?final():intro(n)}
+function worlds(){theme(-1);V(`${hdr('🌎 Mundos')}<div class=gw>${W.map((w,i)=>{const o=1;return `<button class="btn ${o?'w':''}" style="${o?'':'background:rgba(0,0,0,.4)'}" ${o?`onclick="intro(${i})"`:'disabled'}><div style="font-size:44px">${o?w.i:'🔒'}</div><div class=t style="font-size:21px">${i+1}. ${w.n}</div><div style="font-size:15px">${D.medal[i]?['','🥉','🥈','🥇'][D.medal[i]]+' ':''}Jefe: ${w.b[0]}</div></button>`}).join('')}</div>`)}
+function achs(){theme(-1);V(`${hdr('🏆 Logros')}<div class=list>${AL.map(a=>`<div class=row style="${D.ach[a[0]]?'':'opacity:.5'}"><span style="font-size:36px">${D.ach[a[0]]?a[1]:'🔒'}</span><div><div class=t style="font-size:22px">${a[2]}</div>${a[3]}</div></div>`).join('')}</div>`)}
+function recs(){theme(-1);const r=D.rec,pd=[1,0,2].map(i=>r[i]?`<div style="background:${['#d89e00','#9aa4b2','#a8642a'][i]};height:${[150,110,80][i]}px"><div class=t style="font-size:26px">${['🥇','🥈','🥉'][i]}</div>${r[i].s}</div>`:'').join('');
+V(`${hdr('📊 Récords')}${r.length?`<div class=pod>${pd}</div><div class=list>${r.map((x,i)=>`<div class=row><span class=t style="font-size:26px;width:34px">${i+1}</span><div style="flex:1">${x.w}<br><small>${x.d}</small></div><span class=t style="font-size:24px">${x.s}</span></div>`).join('')}</div>`:'<div class=card>Aún no hay partidas. ¡Juega para entrar en la tabla!</div>'}`)}
+function cfg(){theme(-1);V(`${hdr('⚙️ Configuración')}<div style="display:grid;gap:12px;max-width:420px;width:100%;margin:auto"><button class="btn b" onclick="tg('sfx')">Efectos: ${D.sfx?'SÍ':'NO'}</button><button class="btn y" onclick="tg('mus')">Música: ${D.mus?'SÍ':'NO'}</button><button class="btn r" onclick="rst()">${rs?'¿Seguro? Pulsa otra vez para borrar todo':'Reiniciar partida'}</button></div>`)}
+function tg(k){D[k]=D[k]?0:1;save();rs=0;if(k=='mus')music(-1);cfg()}
+function rst(){if(!rs){rs=1;cfg();return}const s=D.sfx,m=D.mus;D=fresh();D.sfx=s;D.mus=m;rs=0;save();toast('Partida reiniciada');menu()}
+/* ---------- Partida ---------- */
+function genQ(w,k){const L=GN[w];let g;do{g=P(L)}while(L.length>1&&g===G.lg);G.lg=g;const q=g(k);q.fl=k==2||k==7;return q}
+function intro(i){G={w:i,i:0,lives:3,score:0,st:0,ok:0,tot:0,hp:100,lost:0,tw:Date.now(),lg:null};G.qs=[0,1,2,3,4,5,6,7,8].map(k=>genQ(i,k));theme(i);music(i);
+V(`<div style="margin:auto;text-align:center"><div style="font-size:90px">${W[i].i}</div><p>Mundo ${i+1}</p><h2 style="font-size:clamp(30px,8vw,46px)">${W[i].n}</h2><p id=cd class=t style="font-size:100px">3</p><p>Jefe: ${W[i].b[1]} ${W[i].b[0]}</p></div>`);
+let c=3;const t=setInterval(()=>{c--;const e=$('#cd');if(!e||c<-0){clearInterval(t);return}if(c==0){e.textContent='¡YA!';return}if(c<0)return;e.textContent=c},750);setTimeout(()=>{clearInterval(t);if($('#cd'))ask()},2900)}
+const hud=()=>`<span class=chip>${'❤️'.repeat(G.lives)||'💔'}</span><span class=chip>⭐ ${G.score}</span><span class=chip>🪙 ${D.coins}</span><span class=chip>🔥 x${mu()}</span><span class=chip>${av()} Nv ${lv()}</span>`;
+function ask(){const q=G.qs[G.i],bo=G.i>=5,T=(q.t=='num'?30:q.t=='tf'?12:20)*(q.fl?.5:1);G.T=T;G.q=q;G.tq=Date.now();G.done=0;
+V(`<div class=hud id=hd>${hud()}</div>${bo?`<div class=boss id=bs>${W[G.w].b[1]}<div class=bar style="max-width:360px;margin:6px auto"><b id=hp style="background:var(--r);width:${G.hp}%"></b></div><div class=t style="font-size:20px">${W[G.w].b[0]}</div></div>`:''}
+<div class=bar><b id=tb style="width:100%"></b></div>
+<div class=card><div>${bo?'⚔️ Combate contra el jefe':'Acertijo '+(G.i+1)+' de 5'}${q.fl?' · ⚡ RELÁMPAGO x2':''}</div><div class="q t">${q.q}</div></div>
+${q.t=='num'?`<div class=card style="display:flex;gap:10px"><input id=in inputmode=decimal autocomplete=off placeholder="Escribe tu respuesta" style="flex:1;min-width:0;font:inherit;font-size:28px;padding:10px;border-radius:10px;border:3px solid #46178f"><button class="btn g" onclick="sub()">OK</button></div>`:`<div class=ans>${q.o.map((o,k)=>`<button class="btn ${q.t=='tf'?['b','r'][k]:'rbyg'[k]}" onclick="res(${k})"><span>${q.t=='tf'?['◆','▲'][k]:'▲◆●■'[k]}</span>${q.door?'🚪 ':''}${o}</button>`).join('')}</div>`}`);
+if(q.t=='num')$('#in').focus();
+G.iv=setInterval(()=>{const el=(Date.now()-G.tq)/1000,b=$('#tb');if(b)b.style.width=Math.max(0,100-el/T*100)+'%';if(el>=T)res(null)},100)}
+const sub=()=>{const e=$('#in');if(e)res(e.value.trim()===''?'':e.value)};
+function res(x){if(!G||G.done)return;G.done=1;clearInterval(G.iv);const q=G.q,el=Math.min(G.T,(Date.now()-G.tq)/1000),bo=G.i>=5;let ok=false,pts=0;
+if(x!==null&&x!==''){if(q.t=='num'){const v=parseFloat(String(x).replace('−','-').replace(',','.'));ok=Math.abs(v-parseFloat(q.a))<.011}else ok=q.o[x]==q.a}
+G.tot++;D.solved++;
+if(ok){const m=mu();pts=Math.round(1000*(1-el/G.T/2)*m*(q.fl?2:1)/10)*10;G.score+=pts;G.st++;G.ok++;D.ok++;D.coins+=5*m+(q.fl?5:0);D.smax=Math.max(D.smax,G.st);addxp(10);if(el<3)D.fl.rayo=1;if(bo){G.hp-=25;const b=$('#bs');if(b)b.classList.add('shake')}sfx(1);burst(ok&&G.st>=3?90:45)}
+else{G.st=0;G.lives--;G.lost++;sfx(0);if(bo)G.qs.push(genQ(G.w,8))}
+chk();save();
+if(q.t!='num'){const ci=q.o.indexOf(q.a);document.querySelectorAll('.ans .btn').forEach((b,i)=>b.classList.add(i==ci?'ok':'dim'));if(!ok&&x!==null)document.querySelectorAll('.ans .btn')[x].style.outline='4px dashed #fff'}
+const hd=$('#hd');if(hd)hd.innerHTML=hud();const hp=$('#hp');if(hp)hp.style.width=Math.max(0,G.hp)+'%';const tb=$('#tb');if(tb)tb.style.width=0;
+$('#v').insertAdjacentHTML('beforeend',`<div class=sheet style="background:var(--${ok?'g':'r'})"><div class=t style="font-size:30px">${ok?'¡Correcto! +'+pts:x===null?'¡Se acabó el tiempo!':'Incorrecto'}</div><p style="margin-top:4px">Respuesta: <b>${q.a}</b>. ${q.e}</p><button class="btn w" style="margin-top:10px" onclick="nxt()">Continuar ▶</button></div>`);
+document.querySelector('.sheet').scrollIntoView({block:'end'})}
+function nxt(){if(!G||!G.done)return;if(G.lives<=0)return over();if(G.hp<=0)return win();G.i++;ask()}
+function finish(){D.score+=G.score;D.best=Math.max(D.best,G.score);D.time+=Math.round((Date.now()-G.tw)/1000);D.rec.push({s:G.score,w:W[G.w].n,d:new Date().toLocaleDateString('es')});D.rec.sort((a,b)=>b.s-a.s);D.rec=D.rec.slice(0,10)}
+function win(){const w=G.w,acc=G.ok/G.tot,md=G.lost==0&&acc>=.9?3:acc>=.7?2:1;D.done[w]=1;D.medal[w]=Math.max(D.medal[w],md);D.coins+=50;addxp(50);if(G.lost==0)D.fl.imp=1;finish();chk();save();sfx(1);burst(150);music(-1);
+const all=D.done.every(x=>x);setTimeout(()=>{if($('#nx'))all?final():intro(w+1)},6000);
+V(`<div style="margin:auto;text-align:center;display:grid;gap:12px;width:100%"><div class=boss>${['🥉','🥈','🥇'][md-1]}</div><h2 style="font-size:clamp(32px,8vw,52px)">¡${W[w].b[0]} derrotado!</h2>
+<div class=hud style="justify-content:center"><span class=chip>⭐ ${G.score}</span><span class=chip>🎯 ${Math.round(acc*100)}%</span><span class=chip>🪙 +50 bonus</span></div><p id=nx>${all?'Resultado final':'Siguiente mundo'} en 6 segundos…</p>
+<div style="display:grid;gap:12px;max-width:420px;width:100%;margin:auto">${all?'<button class="btn r" onclick="final()">🏁 Ver resultado final</button>':`<button class="btn g" onclick="intro(${w+1})">Siguiente mundo ▶</button>`}<button class="btn b" onclick="worlds()">🌎 Mundos</button><button class="btn w" onclick="menu()">Menú</button></div></div>`)}
+function over(){finish();save();music(-1);V(`<div style="margin:auto;text-align:center;display:grid;gap:12px;width:100%"><div class=boss>💔</div><h2 style="font-size:clamp(32px,8vw,52px)">¡Te quedaste sin vidas!</h2><p>Hiciste ⭐ ${G.score} puntos. Repasa las explicaciones e inténtalo de nuevo.</p><div style="display:grid;gap:12px;max-width:420px;width:100%;margin:auto"><button class="btn r" onclick="intro(${G.w})">↻ Reintentar mundo</button><button class="btn w" onclick="menu()">Menú</button></div></div>`)}
+function final(){stopT();theme(6);music(6);burst(200);setTimeout(()=>burst(150),600);const acc=D.solved?D.ok/D.solved:0,g=D.medal.filter(x=>x==3).length,s=D.medal.filter(x=>x==2).length,b=D.medal.filter(x=>x==1).length,t=D.time,
+rk=acc>=.9&&g>=5?'👑 Gran Matemático':acc>=.8?'🧠 Maestro':acc>=.65?'🚀 Explorador':'🌱 Aprendiz';
+V(`<div style="margin:auto;text-align:center;display:grid;gap:12px;width:100%"><h1 style="font-size:clamp(40px,11vw,84px)">¡FELICIDADES!</h1><p style="max-width:520px;margin:auto">“Has completado MATH QUEST y demostrado que puedes convertir las matemáticas en un desafío.”</p>
+<div class=gw style="max-width:640px;margin:auto"><div class=card>⭐ Puntuación final<div class=t style="font-size:34px">${D.score}</div></div><div class=card>⏱️ Tiempo<div class=t style="font-size:34px">${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}</div></div><div class=card>🧩 Acertijos resueltos<div class=t style="font-size:34px">${D.ok}</div></div><div class=card>🎯 Respuestas correctas<div class=t style="font-size:34px">${Math.round(acc*100)}%</div></div><div class=card>🏅 Medallas<div class=t style="font-size:30px">🥇${g} 🥈${s} 🥉${b}</div></div><div class=card>Rango final<div class=t style="font-size:28px">${rk}</div></div></div>
+<div style="display:grid;gap:12px;max-width:420px;width:100%;margin:auto"><button class="btn b" onclick="worlds()">🌎 Rejugar mundos</button><button class="btn w" onclick="menu()">Menú</button></div></div>`)}
+addEventListener('keydown',e=>{if(!G||!G.q)return;const k=+e.key;if(!G.done&&G.q.o&&k>=1&&k<=G.q.o.length&&$('.ans'))res(k-1);else if(e.key=='Enter'){if(G.done&&$('.sheet'))nxt();else if(!G.done&&$('#in'))sub()}});
+menu();
+</script></body></html>
